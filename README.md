@@ -1,4 +1,4 @@
-# Irys ThirdWeb NFT Toolkit
+# Irys NFT Toolkit
 
 A set of scripts for minting NFTs using Irys and ThirdWeb
 
