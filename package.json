@@ -1,0 +1,18 @@
+{
+  "name": "irys-nft-toolkit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@irys/sdk": "^0.1.16",
+    "@types/node": "^20.11.30",
+    "dotenv": "^16.4.5",
+    "thirdweb": "^5.0.0-beta-79bafa250f71ecb151316db11df681843addef32-20240321191826"
+  }
+}
