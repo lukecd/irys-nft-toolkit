@@ -1,6 +1,9 @@
+# Dev file
+scripts/generate-metadata-luke.ts
+
 # NFT files
-images/
-metadata/
+images/*
+metadata/*
 
 # Environment variables
 .env

@@ -1,8 +1,9 @@
 import fs from "fs/promises";
 import path from "path";
-import dotenv from "dotenv";
-dotenv.config();
-import { getIrys, getImageBase, getMetadataBase } from "./utils";
+import sharp from "sharp";
+import validatedEnv from "../env";
+import { getIrys, getImageBase, getMetadataBase, promptContinue, fundIrys } from "./utils";
+import BigNumber from "bignumber.js";
 
 interface NFTMetadata {
 	name: string;
@@ -19,11 +20,11 @@ interface Attribute {
 	value: string | number;
 }
 
-const IMAGE_DIR = process.env.IMAGE_DIR || "./images";
-const IRYS_GATEWAY = process.env.IRYS_GATEWAY || "https://gateway.irys.xyz";
-const METADATA_DIR = process.env.METADATA_DIR || "./metadata";
-const CSV_PATH = path.join(METADATA_DIR, "metadata.csv");
-const ACCEPTED_IMAGE_TYPES = (process.env.ACCEPTED_IMAGE_TYPES || "").split(",");
+const IMAGE_DIR = validatedEnv.IMAGE_DIR || "./images";
+const IRYS_GATEWAY = validatedEnv.IRYS_GATEWAY || "https://gateway.irys.xyz";
+const METADATA_DIR = validatedEnv.METADATA_DIR || "./metadata";
+const ACCEPTED_IMAGE_TYPES = (validatedEnv.ACCEPTED_IMAGE_TYPES || "").split(",");
+const OUTPUT_JSON_PATH = path.join(METADATA_DIR, "output.json");
 
 const parseAttributes = (attributesJson: string): Attribute[] => {
 	try {
@@ -35,29 +36,77 @@ const parseAttributes = (attributesJson: string): Attribute[] => {
 };
 
 const metadata: NFTMetadata = {
-	name: process.env.NAME || "",
-	description: process.env.DESCRIPTION || "",
+	name: validatedEnv.NAME || "",
+	description: validatedEnv.DESCRIPTION || "",
 	image: "", // This will be set after uploading to Irys
-	external_url: process.env.EXTERNAL_URL,
-	background_color: process.env.BACKGROUND_COLOR,
-	animation_url: process.env.ANIMATION_URL,
-	attributes: parseAttributes(process.env.ATTRIBUTES || "[]"),
+	external_url: validatedEnv.EXTERNAL_URL,
+	background_color: validatedEnv.BACKGROUND_COLOR,
+	animation_url: validatedEnv.ANIMATION_URL,
+	attributes: parseAttributes(validatedEnv.ATTRIBUTES || "[]"),
 };
 
+const ensureSufficientBalance = async (): Promise<boolean> => {
+	const imageFiles = await fs.readdir(IMAGE_DIR);
+
+	let totalBytes = 0;
+	let totalFiles = 0;
+
+	for (const filename of imageFiles) {
+		const filePath = path.join(IMAGE_DIR, filename);
+		const fileStats = await fs.stat(filePath);
+
+		const fileExtension = path.extname(filename).toLowerCase();
+
+		// Check if the file extension is in the list of accepted image types
+		if (!ACCEPTED_IMAGE_TYPES.includes(fileExtension)) {
+			totalBytes += fileStats.size;
+			totalFiles++;
+		}
+	}
+	const irys = await getIrys();
+	const costToUpload = await irys.getPrice(totalBytes);
+	const loadedBalance = await irys.getLoadedBalance();
+
+	console.log(`Total size of ${imageFiles.length} images: ${totalBytes} bytes`);
+	console.log(`Cost to upload ${irys.utils.fromAtomic(costToUpload)} ${irys.token}`);
+	console.log(`Loaded balance ${irys.utils.fromAtomic(loadedBalance)} ${irys.token}`);
+
+	if (costToUpload.isGreaterThan(loadedBalance)) {
+		console.log(`Insufficient balance.`);
+		const missingBalance = costToUpload.minus(loadedBalance);
+
+		const shouldFund = await promptContinue(
+			`Do you wish to fund ${irys.utils.fromAtomic(missingBalance)} ${irys.token}`,
+		);
+		if (shouldFund) {
+			await fundIrys(missingBalance);
+		}
+		return false;
+	} else {
+		const shouldContinue = await promptContinue("Continue");
+		if (!shouldContinue) {
+			return false;
+		}
+	}
+
+	return true;
+};
+
+/**
+ *
+ */
 const uploadImagesAndUpdateMetadata = async (): Promise<void> => {
+	// 1. Ensure user has a sufficient balance to upload images
+	if (!(await ensureSufficientBalance())) return;
+
 	const irys = await getIrys();
 	const imageFiles = await fs.readdir(IMAGE_DIR);
 
 	// Ensure the metadata directory exists
 	await fs.mkdir(METADATA_DIR, { recursive: true });
+	let entries: { metadataName: string; metadataUrl: string }[] = [];
 
-	// Check if metadata.csv exists; if not, create it and write the headers
-	try {
-		await fs.access(CSV_PATH);
-	} catch (error) {
-		await fs.writeFile(CSV_PATH, "metadataName,metadataUrl\n", { flag: "wx" });
-	}
-
+	// 2. Upload files one at a time
 	for (const filename of imageFiles) {
 		const fileExtension = path.extname(filename).toLowerCase();
 
@@ -67,28 +116,65 @@ const uploadImagesAndUpdateMetadata = async (): Promise<void> => {
 			continue; // Skip to the next file if not accepted
 		}
 		// Upload the image
-		console.log(`Uploading ${path.join(IMAGE_DIR, filename)}`);
 		const image = path.join(IMAGE_DIR, filename);
 		const imageReceipt = await irys.uploadFile(image);
 
 		// Inject it into the metadata
 		metadata.image = getImageBase() + imageReceipt.id;
+		console.log(`image value  ${metadata.image}`);
+
+		// Resize and convert the image to base64
+		const imagePath = path.join(IMAGE_DIR, filename);
+		const resizedImageBuffer = await sharp(imagePath).resize(300, 300).png().toBuffer();
+		const base64Image = `data:image/png;base64,${resizedImageBuffer.toString("base64")}`;
+
+		// Load the HTML template and replace the placeholder with the base64 image string
+		const htmlTemplatePath = "./scripts/mountain-trip-template.html";
+		let htmlContent = await fs.readFile(htmlTemplatePath, "utf8");
+		htmlContent = htmlContent.replace("<PUT_IMAGE_HERE_>", base64Image);
+
+		// Upload the modified HTML to Irys
+		const htmlTags = [{ name: "Content-Type", value: "text/html" }];
+		const htmlReceipt = await irys.upload(Buffer.from(htmlContent, "utf8"), { tags: htmlTags });
+
+		// Set the animation_url in your metadata
+		metadata.animation_url = getImageBase() + htmlReceipt.id;
+		console.log(`animation_url value  ${metadata.animation_url}`);
 
 		// Upload the metadata
 		console.log(`Uploading metadata`);
-		const tags = [{ name: "Content-Type", value: "application/json" }];
-		const metadataReceipt = await irys.upload(JSON.stringify(metadata), { tags });
+		const jsonTags = [{ name: "Content-Type", value: "application/json" }];
+		const metadataReceipt = await irys.upload(JSON.stringify(metadata), { tags: jsonTags });
 
 		// Output the metadata
 		const metadataName = path.basename(image, path.extname(image)) + ".json";
 		const metadataPath = path.join(METADATA_DIR, metadataName);
-		await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+		console.log(`metadata url  ${metadataPath}`);
 
-		// Log the metadata and URL
+		await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
 		const metadataUrl = getMetadataBase() + metadataReceipt.id;
-		const csvLine = `${metadataName},${metadataUrl}\n`;
-		await fs.writeFile(CSV_PATH, csvLine, { flag: "a" });
+
+		entries.push({
+			metadataName: filename.replace(fileExtension, ".json"),
+			metadataUrl: metadataUrl,
+		});
 	}
+	console.log("Upload and metadata generation complete.");
+
+	await fs.writeFile(OUTPUT_JSON_PATH, JSON.stringify(entries, null, 2));
 };
 
-uploadImagesAndUpdateMetadata().then(() => console.log("Upload and metadata generation complete."));
+async function main(): Promise<void> {
+	try {
+		console.log(`Irys network: ${validatedEnv.IRYS_NETWORK}`);
+		console.log(`Payment token: ${validatedEnv.IRYS_TOKEN}`);
+		const irys = await getIrys();
+		console.log(`Connected from ${irys.address}\n`);
+
+		await uploadImagesAndUpdateMetadata();
+	} catch (error) {
+		console.error("An error occurred:", error);
+	}
+}
+
+main();
