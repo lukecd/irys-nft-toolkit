@@ -27,15 +27,11 @@ Define your project's metadata in the [`.env`](https://github.com/lukecd/irys-nf
 
 ## Setup
 
-Rename `.env.example` to `.env` and fill in with your private key and NFT metadata. Your private key will be used to pay for uploads to Irys and interact with the contract.
+1. Rename `.env.example` to `.env` and fill in with your private key and NFT metadata. Your private key will be used to pay for uploads to Irys, to sign transactions, and to interact with the contract.
 
-Place your images in the `images` folder.
+2. Place your images in the `images` folder.
 
-Run
-
-```console
-npm install
-```
+3. Run `npm install`
 
 ## Commands
 
