@@ -33,16 +33,16 @@ const envSchema = z.object({
 	CONTRACT_TYPE: z.string(),
 
 	// Chain information
-	CHAIN_ID: z.string(),
-	CHAIN_NAME: z.string(),
-	CHAIN_NETWORK: z.string(),
-	CURRENCY_DECIMALS: z.string(),
-	CURRENCY_NAME: z.string(),
-	CURRENCY_SYMBOL: z.string(),
-	RPC_URL_DEFAULT_HTTP: z.string(),
-	RPC_URL_PUBLIC_HTTP: z.string(),
-	BLOCK_EXPLORER_NAME: z.string(),
-	BLOCK_EXPLORER_URL: z.string(),
+	// CHAIN_ID: z.string(),
+	// CHAIN_NAME: z.string(),
+	// CHAIN_NETWORK: z.string(),
+	// CURRENCY_DECIMALS: z.string(),
+	// CURRENCY_NAME: z.string(),
+	// CURRENCY_SYMBOL: z.string(),
+	// RPC_URL_DEFAULT_HTTP: z.string(),
+	// RPC_URL_PUBLIC_HTTP: z.string(),
+	// BLOCK_EXPLORER_NAME: z.string(),
+	// BLOCK_EXPLORER_URL: z.string(),
 });
 
 // Attempt to parse and validate the environment variables

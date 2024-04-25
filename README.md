@@ -17,6 +17,8 @@ When you use Irys to upload data to Arweave, you pay once and your upload is gua
 - Arweave’s protocol Endowment ensures long-term data retrievability by reserving a portion of your upload fee to fund future storage.
 - Arweave’s mining mechanism rewards miners for storing historical data.
 
+The CLI will prompt you to fund an Irys node when uploading. When working with Irys' mainnet, use [real tokens](https://docs.irys.xyz/overview/supported-tokens#mainnet-tokens), when working with [Irys' devnet use free tokens available from faucets](https://docs.irys.xyz/overview/supported-tokens#devnet-tokens).
+
 ## Metadata
 
 [NFT metadata](https://docs.opensea.io/docs/metadata-standards) contains the NFT name, symbol, description, unique attributes and other things.
@@ -26,6 +28,14 @@ Define your project's metadata in the [`.env`](https://github.com/lukecd/irys-nf
 ## Setup
 
 Rename `.env.example` to `.env` and fill in with your private key and NFT metadata. Your private key will be used to pay for uploads to Irys and interact with the contract.
+
+Place your images in the `images` folder.
+
+Run
+
+```console
+npm install
+```
 
 ## Commands
 

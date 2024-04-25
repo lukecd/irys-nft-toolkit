@@ -123,24 +123,6 @@ const uploadImagesAndUpdateMetadata = async (): Promise<void> => {
 		metadata.image = getImageBase() + imageReceipt.id;
 		console.log(`image value  ${metadata.image}`);
 
-		// Resize and convert the image to base64
-		const imagePath = path.join(IMAGE_DIR, filename);
-		const resizedImageBuffer = await sharp(imagePath).resize(300, 300).png().toBuffer();
-		const base64Image = `data:image/png;base64,${resizedImageBuffer.toString("base64")}`;
-
-		// Load the HTML template and replace the placeholder with the base64 image string
-		const htmlTemplatePath = "./scripts/mountain-trip-template.html";
-		let htmlContent = await fs.readFile(htmlTemplatePath, "utf8");
-		htmlContent = htmlContent.replace("<PUT_IMAGE_HERE_>", base64Image);
-
-		// Upload the modified HTML to Irys
-		const htmlTags = [{ name: "Content-Type", value: "text/html" }];
-		const htmlReceipt = await irys.upload(Buffer.from(htmlContent, "utf8"), { tags: htmlTags });
-
-		// Set the animation_url in your metadata
-		metadata.animation_url = getImageBase() + htmlReceipt.id;
-		console.log(`animation_url value  ${metadata.animation_url}`);
-
 		// Upload the metadata
 		console.log(`Uploading metadata`);
 		const jsonTags = [{ name: "Content-Type", value: "application/json" }];
