@@ -24,9 +24,9 @@ Rename `.env.example` to `.env` and fill in with your private key and NFT metada
 
 - `npm run metadata`
 
-1. Permanently Uploads images to Irys
+1. Permanently uploads images to Irys
 2. Generates metadata files
-3. Uploads metadata files
+3. Permanently uploads metadata files to Irys
 4. Exports metadata files
 5. Exports a JSON file containing URLs for each metadata file
 
