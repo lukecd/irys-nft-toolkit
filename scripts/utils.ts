@@ -55,7 +55,7 @@ export const chainConfiguration = sepolia;
 // });
 
 interface IrysConfig {
-	url: string;
+	network: string;
 	token: string;
 	key: string;
 	config: {
@@ -64,13 +64,13 @@ interface IrysConfig {
 }
 
 const getIrys = async (): Promise<Irys> => {
-	const url: string = validatedEnv.IRYS_NETWORK;
+	const network: string = validatedEnv.IRYS_NETWORK;
 	const token: string = validatedEnv.IRYS_TOKEN;
 	const key: string = validatedEnv.PRIVATE_KEY;
 	const providerUrl: string = validatedEnv.IRYS_PROVIDER_URL!;
 
 	const irysConfig: IrysConfig = {
-		url,
+		network,
 		token,
 		key,
 		config: { providerUrl },
