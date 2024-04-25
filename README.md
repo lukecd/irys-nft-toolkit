@@ -10,6 +10,13 @@ A smart contract tracks NFT ownership and is permanent and immutable. However, t
 
 This toolkit is a simple CLI to make [uploading NFTs to Irys even easier](https://docs.irys.xyz/hands-on/tutorials/uploading-nfts).
 
+## Paying for uploads
+
+When you use Irys to upload data to Arweave, you pay once and your upload is guaranteed to be retrievable forever. This is made possible because:
+
+- Arweave’s protocol Endowment ensures long-term data retrievability by reserving a portion of your upload fee to fund future storage.
+- Arweave’s mining mechanism rewards miners for storing historical data.
+
 ## Metadata
 
 [NFT metadata](https://docs.opensea.io/docs/metadata-standards) contains the NFT name, symbol, description, unique attributes and other things.
